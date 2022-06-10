@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html PUBLIC"-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="ScramblsJS.css" />
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+</head>
+<body onload="OnLoadBody()">
+    <noscript> <p>You must enable <em>Javascript</em> to use this page.<p> </noscript>
+    <!-- Test classes -->
+    <script src="ScramblsJS.js"></script>    
+    <!-- Scrambls.com classes -->
+    <script src="../js/xloak.js"></script>
+    <script src="../js/codec.js"></script>
+    <script src="../js/util.js"></script>
+    <!-- SJCL classes -->
+    <script src="../js/SJCL/sjcl.js"></script>
+    <script src="../js/SJCL/codecString.js"></script>
+    <script src="../js/SJCL/bitArray.js"></script>
+    <script src="../js/SJCL/aes.js"></script>
+    <!-- Zip.js classes -->
+    <script src="../js/Zip.js/array.js"></script>
+    <script src="../js/Zip.js/inflate.js"></script>
+    <script src="../js/Zip.js/deflate.js"></script>
+    <!-- Leo's classes -->
+    <script src="../js/aesCloaker.js"></script>
+    <script src="../js/ctrMode.js"></script>
+          
+    <div id="maindiv">       
+        <div id="header">
+            <h1>Scrambls: AES encryption and DEFLATE compression in Javascript</h1>           
+            <p id="p1">
+                Enter a message to scramble, below.
+            </p>            
+        </div>
+        <div id="top">       
+            <div id=topleft>                    
+                <fieldset style="background:#6090FF" onkeyup="OnOriginalChange()">                  
+                    1. Original:
+                    <input id="originalCounter" size=3 readonly="1">
+                    <textarea id="originalBox"  cols=35 rows=8></textarea>                                    
+                </fieldset>
+            </div>
+            <div id=topmiddle>                   
+                <fieldset  style="background:#FF6060">                                
+                    2. Scrambled:
+                    <input id="scrambledCounter" size=3 readonly="1">
+                    <textarea id="scrambledBox" cols=35 rows=8 readonly="1"></textarea>                                 
+                </fieldset>
+            </div>        
+            <div id=topright>                    
+                <fieldset style="background:#60FF60">                                
+                    3. Descrambled:    
+                    <input id="descrambledCounter" size=3 readonly="1">
+                    <textarea id="descrambledBox"   cols=35 rows=8 readonly="1"></textarea>                                 
+                </fieldset>
+            </div>               
+        </div>             
+    </div> 
+
+    </body>
+</html>

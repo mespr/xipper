@@ -1,0 +1,205 @@
+/**
+ * Xloaker namespace.
+ */
+"use strict";
+
+/*
+  API into a xloaker:
+
+    function cloak(key, cleartext, nextPostInKey)
+	  returns {ciphered: "ciphertext", key: nextPosInKey} 
+
+  and to reverse it:
+
+    function decloak(key, cloakedtext, state)   state = {keyp: nextPosInKey};
+      return {clear: "cleartext", state: state}
+      
+  The AES cloaker ignores the 'state'/'nextPosInKey' arguments and returns them unmodified.
+      
+  The AES cloaker's algorithm to cloak unicode characters is to take the actual
+  codepoint value for each unicode character in the string and encrypt it with 
+  AES in CTR mode, initialized with the key supplied.  The new codepoint value 
+  might or might not be a valid codepoint (it might not be valid because not all 
+  integer values are defined in the unicode standard).  Because it might not be
+  a valid codepoint, we can't just put out that character.  Moreover, it is 
+  likely that a browser might not display all codepoints, so we need to 
+  carefully choose the set of characters that will be used for encoding.
+
+  Once the new value is determine, we encode the integer as a set of Unicode
+  characters.  A set of 256 unicode characters (representing all values a byte
+  can take on) is used to put out byte values, and the UTF-8 encoding scheme is
+  used to split values into more than a single byte.
+ */
+Xloaker.aesCloaker = (function() {
+
+	var pubs = {};  // publicly available functions are put here
+	var xbrowser = XloakerBrowser.api;  // easy alias
+	var xutil = XloakerComm.util;
+	var xcodec = XloakerComm.codec;
+
+	// "coded" contains the set of 256 Unicode chars that are used to
+	// encode the key-shifted cleartext.  It is initialized in
+	// initEncoding.  DO NOT CHANGE THIS SET OF CHARACTERS!!  If ANY
+	// change is made then all cloaked data will become uncloakable!
+	var coded;
+    var deflate = new Deflate(); 
+    var inflate = new Inflate(); 
+
+	function log(msg) {
+		xbrowser.logDebug("[aesCloaker: " + msg + "]");
+	}
+
+	function toList(s) {
+		var l = [];
+		for (var i = 0; i < s.length; i++)
+			l.push(s.charCodeAt(i));
+		return l;
+	}
+
+	function initEncoding() {                        
+		var tlist = "";
+		var ch;
+
+		// DO NOT CHANGE THIS SET OF CHARACTERS!!  If ANY change is
+		// made then all cloaked data will become uncloakable!  Also, all
+		// of these characters must have a char code >= 128
+		for (ch = 0x0142; ch < 0x01C0; ch++)  // 126 chars
+			tlist += String.fromCharCode(ch);
+		for (ch = 0x0400; ch < 0x0470; ch++)  // 112 chars
+			tlist += String.fromCharCode(ch);
+		for (ch = 0x30B0; ch < 0x30C2; ch++) 
+			tlist += String.fromCharCode(ch); // 18 chars
+
+		if (tlist.length != 256) {
+			log("initDomainRange:  need exactly 256 chars but have " + tlist.length);
+		}
+
+		coded = toList(tlist).sort(function(a, b) {return a - b;});
+	}
+
+    /**
+	 * aesCloak
+	 */
+	function aesCloak(key, clear, kc) {  // returns {ciphered: string, keyp: int}; ciphered contains ciphertext, keyp contains next key position
+		var unhexedKey = xcodec.decodeHex(key);			
+        kc = kc || 0;
+		
+        // Encode the cleartext unambiguously into a byte array.
+        var byteArray = stringToByteArray(clear);
+        
+        // Compress the byte array
+        var deflater = new deflate.Deflater(9);
+        deflater.append(byteArray);
+        var compressed = deflater.flush();           
+                
+        // Encrypt the byte array using the given key, and using kc as the IV.
+        var cipher = new ctrmode(sjcl.cipher.aes, unhexedKey, kc);
+        var ciphertext = cipher.encrypt(compressed);        
+        
+        // Encode the ciphertext, byte by byte, into the output character set.
+        var cloaked = "";
+        for (var i = 0; i < ciphertext.length; i++) {        
+            cloaked += String.fromCharCode(coded[ciphertext[i]]);
+        }
+        
+        // Insert random whitespace for a better appearance.
+        cloaked = insertWhitespace(cloaked);
+        
+        // Update the external counter/iv variable
+        kc += byteArray.length;
+        
+		return {ciphered: cloaked, keyp: kc};
+	}
+
+	/**
+	 * aesDecloak
+	 */
+	function aesDecloak(key, cloaked, state) {  // returns {clear: string, state: state}; clear contains clear text, state contains next key position
+		var unhexedKey = xcodec.decodeHex(key);
+		
+        state = state || {};
+		var kc = state.keyp || 0;
+        
+        // Remove any ASCII chars including whitespace. 
+        // ASCII chars can only be found in the cloaked input if inserted by
+        // the website - for example, Facebook may insert '...' into messages;
+        // and whitespace may be inserted both by the cloaker and by the website
+        var clean = "";
+        for (var i = 0; i < cloaked.length; i++) {            
+            if (xutil.isUnicodeWhitespace(cloaked[i]) ||
+                cloaked.charCodeAt(i) < 128) {
+                continue;
+            }
+            clean += cloaked[i];                
+        }
+
+        // Decode the cleaned-up string into an array of bytes (8-bit integers).
+        var byteArray = [];
+        for (var i = 0; i < clean.length; i++) {
+            var byteIndex = xutil.binsearch(coded, clean.charCodeAt(i));
+            byteArray.push(byteIndex);            
+        }
+        
+        // Decrypt the byte array using the given key, and using kc as the IV.
+        var cipher = new ctrmode(sjcl.cipher.aes, unhexedKey, kc);
+        var plaintext = cipher.decrypt(byteArray);                
+        
+        // Decompress the byte array
+        var inflater = new inflate.Inflater();    
+        var decompressed = inflater.append(plaintext);          
+              
+        // Update the external counter/iv variable
+        state.keyp = kc + byteArray.length;
+        
+        // Decode the byte array into a Unicode string as understood by Javascript.
+        var decoded = stringFromByteArray(decompressed);
+		return {clear: decoded, state: state};
+	}    
+    
+    function stringToByteArray(string) {
+        string = unescape(encodeURIComponent(string));
+        var result = [];
+        for (var i = 0; i < string.length; i++)
+        {
+            var charCode = string.charCodeAt(i);
+            do
+            {
+                result.push(charCode & 0xFF);
+                charCode >>= 8;
+            }
+            while (charCode > 0);
+        }
+        return result;
+    }
+        
+    function stringFromByteArray(array) {            
+        var result = "";
+        for (var i = 0; i < array.length; i++)
+        {                
+            result += String.fromCharCode(array[i]);                
+        }
+        return decodeURIComponent(escape(result)); 
+    }
+	
+    /**
+      * Insert spaces into text at random intervals to give it a lifelike appearance.
+      */
+    function insertWhitespace(text) {
+        var i = 0;
+        var last = 0;
+        var result = ""
+        while (i < text.length) {
+            i += Math.floor(Math.random() * 10 + 5);
+            result += text.substring(last, i) + " ";
+            last = i;
+        }    
+        return result;
+    }
+    
+    initEncoding();	    
+    
+	pubs.cloak = aesCloak;
+	pubs.decloak = aesDecloak;
+
+	return pubs;
+})();

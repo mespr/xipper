@@ -1,0 +1,14 @@
+{
+  "name": "xipper",
+  "version": "1.0.0",
+  "description": "Streaming text cypher",
+  "main": "index.mjs",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "test/test.xjs"
+  },
+  "author": "",
+  "license": "MIT"
+}

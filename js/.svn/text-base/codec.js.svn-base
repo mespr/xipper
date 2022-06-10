@@ -1,0 +1,276 @@
+/**
+ * Xloaker namespace.
+ */
+"use strict";
+
+// This is how you declare a name space in javascript
+if ("undefined" == typeof(XloakerComm))
+{
+    var XloakerComm = {};
+};
+
+/*
+ * coding/decoding functionality
+ */
+XloakerComm.codec = (function() {
+
+	var pubs = {};  // publicly available functions are put here
+	//var xbrowser = XloakerBrowser.api;  // easy alias
+
+	// I have to say that I don't know if precalculating this really saves much...
+	// the following 4 defs are for decoding hex strings
+	var hex0 = '0'.charCodeAt(0);
+	var hex9 = '9'.charCodeAt(0);
+	var hexA = 'a'.charCodeAt(0);
+	var hexF = 'f'.charCodeAt(0);
+
+	var B64Chars   = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+					  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+					  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', '$'];
+
+	function log(msg) {
+		xbrowser.logDebug("[codec: " + msg + "]");
+	}
+
+	function encodeXID(id) {
+		if (isNaN(parseInt(id)))
+			return id;
+
+		// format is:  1-byte-length; base-36-dbid-chars, 1-byte-chksum
+		var rad = toRadix(id, 36);
+		var bytes = [rad.length];
+		var chk = 0;
+		var ss = "";
+		var cc;
+
+		for (var i = 0; i < rad.length; i++) {
+			cc = rad.charCodeAt(i);
+			bytes[i+1] = cc;
+			chk = (chk + 43 * cc) % 243;
+		}
+		bytes[rad.length+1] = chk;
+
+		bytes = encodeB64(bytes);
+		for (var idx = 0; idx < bytes.length; idx++) {
+			ss += bytes[idx];
+		}
+
+		return ss;
+	}
+
+	function decodeXID(xid) {
+		// assumes we start after any marker/version chars
+		var bytes = decodeB64(xid);
+		var len   = bytes[0];
+
+		if (len == bytes.length - 2) {
+			var rad="", chk=0;
+			for (var i = 1; i < bytes.length - 1; i++) {
+				var by = bytes[i];
+				chk = (chk + 43 * by) % 243;
+				rad += String.fromCharCode(by);
+			}
+
+			if (chk == bytes[bytes.length - 1]) {  // passes checksum
+				return fromRadix(rad, 36);
+			}
+		}
+	}
+
+	function toRadix(n, radix) {
+		if (n) {
+			var HexN="", Q=Math.floor(Math.abs(n)), R;
+			while (true) {
+				R = Q % radix;
+				HexN = "0123456789abcdefghijklmnopqrstuvwxyz".charAt(R) + HexN;
+				Q=(Q-R)/radix;
+				if (Q==0)
+					break;
+			}
+			return ((n < 0) ? "-"+HexN : HexN);
+		}
+		return "0";
+	}
+
+	function fromRadix(s,radix) {
+		var v = 0;
+		for (var i = 0; i < s.length; i++) {
+			var c = s.charAt(i);
+			var cc = c.charCodeAt();
+			if ((c >= '0' && c <= '9'))      v = v * radix + (cc - '0'.charCodeAt());
+			else if ((c >= 'a' && c <= 'z')) v = v * radix + (cc - 'a'.charCodeAt() + 10);
+		}
+
+		return v;
+	}
+
+	function encodeB64(bytes, charset) {
+		if (!bytes)
+			return [];
+
+		var str = [];
+		var sidx = 0;
+
+		charset = charset || B64Chars;
+
+		if (charset.length != 64)
+			log("encodeB64 called with a charset that isn't exactly 64 chars long!");
+
+		// general:  grab 3 bytes and generate up to 4 chars
+		// end case:  (originalByteAry.length % 3) == 0:  we will have multiple of 4 chars (since orig has multiple of 24 bits)
+		// end case:  (originalByteAry.length % 3) == 1:  multiple of 24 bits (4 chars) +  8 bits = 1 char + 2bits left over
+		// end case:  (originalByteAry.length % 3) == 2:  multiple of 24 bits (4 chars) + 16 bits = 2 char + 4bits left over
+
+		for (var i = 0; i < bytes.length; i++) {
+			// at beginning of 3-byte chunk
+			var b1 = bytes[i];
+
+			str[sidx++] = charset[b1 & 0x3f];  // always can append 1 char for the 6 bits
+			b1 = b1 >>> 6;  // keep top 2 bits
+
+			if (++i < bytes.length) {
+				var b2 = bytes[i];
+
+				// take 2 bits from b1 and 4 bits from b2
+				str[sidx++] = charset[b1 + ((b2 & 0xf) << 2)];  // keep 4 bits from b2 but shift left by 2
+				b2 = b2 >>> 4; // keep top 4 bits
+
+				if (++i < bytes.length) {
+					var b3 = bytes[i];
+
+					str[sidx++] = charset[b2 + ((b3 & 0x3) << 4)];
+					str[sidx++] = charset[b3 >>> 2];
+				}
+				else {  // no remaining byte to combine with 4 bits from 2nd byte with
+					str[sidx++] = charset[b2];
+				}
+			}
+			else {  // no remaining byte to combine the 2 bits from the first byte with
+				str[sidx++] = charset[b1];
+			}
+		}
+
+		return str;
+	}
+
+	function decodeB64(str, charset, findFn) {
+		if (!str)
+			return [];
+
+		var by  = [];
+		var byi = 0;
+
+		charset = charset || B64Chars;
+		findFn = findFn || findChar;
+
+		if (charset.length != 64)
+			log("decodeB64 called with a charset that isn't exactly 64 chars long!");
+
+		// general:  grab 4 chars (each of which is really 6 bits) and pull out 3 bytes (24 bits)
+		// end case:  (originalByteAry.length % 3) == 0:  we will have multiple of 4 chars (since orig has multiple of 24 bits)
+		// end case:  (originalByteAry.length % 3) == 1:  multiple of 24 bits (4 chars) +  8 bits = 1 char + 2bits left over
+		// end case:  (originalByteAry.length % 3) == 2:  multiple of 24 bits (4 chars) + 16 bits = 2 char + 4bits left over
+
+		for (var i = 0, m = str.length; i < m; i++) {
+			// at beginning of 4 char chunk
+			var b1 = findFn(str.charAt(i));
+
+			if (++i < str.length) {
+				var b2 = findFn(str.charAt(i));
+
+				by[byi++] = b1 + ((b2 & 0x3) << 6);
+
+				if (++i < str.length) {
+					var b3 = findFn(str.charAt(i));
+
+					by[byi++] = (b2 >>> 2) + ((b3 & 0xf) << 4);
+
+					if (++i < str.length) {
+						var b4 = findFn(str.charAt(i));
+
+						by[byi++] = (b3 >>> 4) + (b4 << 2);
+					}
+					else {
+						by[byi++] = b3 >>> 4;
+					}
+				}
+				else {   // only b1 and b2
+					by[byi++] = b2 >>> 2;
+				}
+			}
+			else {  // no more chars, so assume 0s for bits
+				by[byi++] = b1;
+			}
+		}
+
+		// possible artifact of decoding is that we have an extra 0 byte that ends it
+		// but only if the string didn't have any leftovers
+		if (((str.length % 4) != 0) && (by[by.length - 1] == 0)) {
+			by.splice(by.length - 1, 1);
+		}
+
+		return by;
+	}
+
+	function findChar(c) {
+		var code = c.charCodeAt();
+
+		if ((c >= 'a') && (c <= 'z'))
+			return code - 'a'.charCodeAt();
+		else if ((c >= 'A') && (c <= 'Z'))
+			return (code - 'A'.charCodeAt()) + 26;
+		else if ((c >= '0') && (c <= '9'))
+			return (code - '0'.charCodeAt()) + 52;
+		else if (c === '@')
+			return 62;
+		else if (c === '$')
+			return 63;
+		else
+			return 0;
+	}
+
+    // Encode the given list of integers into hexadecimal.
+    function encodeHex(ints) {    
+        var hex = "";
+        for (var i = 0; i < ints.length; i++) {
+            var str = ints[i].toString(16).toUpperCase();
+            if (str.length % 2 != 0) {            
+                str = "0" + str;
+            }
+            hex += str;        
+        }
+        return hex;
+    }
+    
+    // Decode the given hexadecimal string into a list of integers.
+	function decodeHex(hex) {
+		var list = [];
+		for (var i = 0; i < hex.length; i += 2) {
+			list.push((dehexChar(hex.charAt(i).toLowerCase()) * 16 +
+					   dehexChar(hex.charAt(i + 1).toLowerCase())));
+		}
+		return list;
+	}
+
+    // Decode the given hexadecimal char into an integer.
+	function dehexChar(ch) {
+		ch = ch.charCodeAt(0);
+		if ((hex0 <= ch) && (ch <= hex9)) return (ch - hex0);
+		if ((hexA <= ch) && (ch <= hexF)) return (ch - hexA + 10);
+
+		//log("bad hex char '" + ch + "'");
+	}
+
+	// ################
+	pubs.encodeXID = encodeXID;
+	pubs.decodeXID = decodeXID;
+	pubs.toRadix   = toRadix;
+	pubs.fromRadix = fromRadix;
+	pubs.decodeHex = decodeHex;
+    pubs.encodeHex = encodeHex;
+	pubs.encodeB64 = encodeB64;
+	pubs.decodeB64 = decodeB64;
+    
+
+	return pubs;
+})();

@@ -1,0 +1,22 @@
+/**
+ * Xloaker namespace.
+ */
+"use strict";
+
+// This is a placeholder for the real xloak.js
+if ("undefined" == typeof(Xloaker))
+{
+    var Xloaker = {};    
+}; 
+
+if ("undefined" == typeof(XloakerComm))
+{
+    var XloakerComm = {};    
+}; 
+
+if ("undefined" == typeof(XloakerBrowser))
+{
+    var XloakerBrowser = {};    
+}; 
+
+
