@@ -9,6 +9,11 @@
   "scripts": {
     "test": "test/test.xjs"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mespr/xipper.git"
+  },
+  "homepage": "https://github.com/mespr/xipper#readme",
   "author": "",
   "license": "MIT"
 }
