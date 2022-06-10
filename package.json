@@ -2,7 +2,7 @@
   "name": "xipper",
   "version": "1.0.0",
   "description": "Streaming text cypher",
-  "main": "index.mjs",
+  "main": "Xipper.mjs",
   "directories": {
     "test": "test"
   },

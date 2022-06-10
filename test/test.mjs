@@ -1,12 +1,37 @@
-import Xipper from "../js/Xipper.mjs";
+import Xipper from "../Xipper.mjs";
 
 test('Initalize Xipper', () => {
     let xipper = new Xipper();
 });
 test('Cloak a string', () => {
     let xipper = new Xipper();
-    let result = xipper.cloak("abcdabcdabcdabcdabcdabcdabcdabcd","a string");
+    console.log("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd".length)
+    let result = xipper.cloak("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd","This is a test");
     console.log(result);
+});
+test('DeCloak a string', () => {
+    let xipper = new Xipper({charset:"scrambls"});
+    let result = xipper.cloak("abcdabcdabcdabcdabcdabcdabcdabcd","a string");
+    result = xipper.decloak("abcdabcdabcdabcdabcdabcdabcdabcd","ſдņƯť ќхЖРƷ ");
+    console.log(result);
+});
+test('Fail to DeCloak a string given the wrong key', () => {
+    let xipper = new Xipper({charset:"scrambls"});
+    let result = xipper.cloak("abcdabcdabcdabcdabcdabcdabcdabcd","a string");
+    try {
+        result = xipper.decloak("Ebcdabcdabcdabcdabcdabcdabcdabcd","ſдņƯť ќхЖРƷ ");
+    } catch(e) {
+        console.log(e);
+    }
+});
+test('Make token from object', () => {
+    let xipper = new Xipper({spacing:false,charset:"extended"});
+    let obj = {root:"https://nytimes.com",url:"https://nytimes.com/world",type:"text/html"}
+    console.log(obj);
+    let result = xipper.cloak("abcdabcdabcdDk35CbcDkS8Hnwcdabcd",JSON.stringify(obj));
+    console.log(result);
+    result = xipper.decloak("abcdabcdabcdDk35CbcDkS8Hnwcdabcd",result);
+    console.log(JSON.parse(result));
 });
 
 process.exit(); // success

@@ -1,5 +1,5 @@
 /*
-  API into a xloaker:
+  API into a Xipper:
 
     function cloak(key, cleartext, nextPostInKey)
 	  returns {ciphered: "ciphertext", key: nextPosInKey} 
@@ -20,19 +20,20 @@
   likely that a browser might not display all codepoints, so we need to 
   carefully choose the set of characters that will be used for encoding.
 
-  Once the new value is determine, we encode the integer as a set of Unicode
+  Once the new value is determined, we encode the integer as a set of Unicode
   characters.  A set of 256 unicode characters (representing all values a byte
   can take on) is used to put out byte values, and the UTF-8 encoding scheme is
   used to split values into more than a single byte.
  */
-import Codec from './Codec.mjs';
-import CtrMode from './CtrMode.mjs';
-import Util from './Util.mjs';
-import Zip from './zipjs/Zip.mjs';
-import sjcl from './sjcl/sjcl.mjs';
+import Codec from './js/Codec.mjs';
+import CtrMode from './js/CtrMode.mjs';
+import Util from './js/Util.mjs';
+import Zip from './js/zipjs/Zip.mjs';
+import sjcl from './js/sjcl/sjcl.mjs';
 
 export default class Xipper {
-    constructor() {
+    constructor(options) {
+        this.options = Object.assign({spacing:true,charset:"extended"},options);
         this.util = new Util();
         this.codec = new Codec();
 
@@ -63,12 +64,27 @@ export default class Xipper {
         // DO NOT CHANGE THIS SET OF CHARACTERS!!  If ANY change is
         // made then all cloaked data will become uncloakable!  Also, all
         // of these characters must have a char code >= 128
-        for (ch = 0x0142; ch < 0x01C0; ch++)  // 126 chars
-            tlist += String.fromCharCode(ch);
-        for (ch = 0x0400; ch < 0x0470; ch++)  // 112 chars
-            tlist += String.fromCharCode(ch);
-        for (ch = 0x30B0; ch < 0x30C2; ch++)
-            tlist += String.fromCharCode(ch); // 18 chars
+        switch(this.options.charset) {
+            case "scrambls":
+                for (ch = 0x0142; ch < 0x01C0; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x0400; ch < 0x0470; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x30B0; ch < 0x30C2; ch++) tlist += String.fromCharCode(ch);
+                break;
+            case "extended":
+                for (ch = 0x0154; ch < 0x0254; ch++) tlist += String.fromCharCode(ch);
+                // for (ch = 0x0180; ch < 0x018e; ch++) tlist += String.fromCharCode(ch);
+                break;
+            case "global":
+                for (ch = 0x10a8; ch < 0x10c5; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x0410; ch < 0x044f; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x2c80; ch < 0x2ca9; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x3148; ch < 0x3162; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x0395; ch < 0x03c9; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x1bc00; ch < 0x1ba5; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0x091d; ch < 0x0933; ch++) tlist += String.fromCharCode(ch);
+                for (ch = 0xa8aa; ch < 0xa8c1; ch++) tlist += String.fromCharCode(ch);
+                break;
+        }
 
         if (tlist.length !== 256) {
             this.log("initDomainRange:  need exactly 256 chars but have " + tlist.length);
@@ -102,12 +118,12 @@ export default class Xipper {
         }
 
         // Insert random whitespace for a better appearance.
-        cloaked = this.insertWhitespace(cloaked);
+        if (this.options.spacing) cloaked = this.insertWhitespace(cloaked);
 
         // Update the external counter/iv variable
         kc += byteArray.length;
 
-        return {ciphered: cloaked, keyp: kc};
+        return cloaked;
     }
     /**
      * aesDecloak
@@ -143,15 +159,15 @@ export default class Xipper {
         let plaintext = cipher.decrypt(byteArray);
 
         // Decompress the byte array
-        let inflater = new inflate.Inflater();
+        let inflater = new this.inflate.Inflater();
         let decompressed = inflater.append(plaintext);
 
         // Update the external counter/iv variable
         state.keyp = kc + byteArray.length;
 
         // Decode the byte array into a Unicode string as understood by Javascript.
-        let decoded = stringFromByteArray(decompressed);
-        return {clear: decoded, state: state};
+        let decoded = this.stringFromByteArray(decompressed);
+        return decoded;
     }
     stringToByteArray(string) {
         string = unescape(encodeURIComponent(string));
