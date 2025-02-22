@@ -211,4 +211,25 @@ export default class Xipper {
         let buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder("utf-8").encode(str));
         return Array.prototype.map.call(new Uint8Array(buf), x=>(('00'+x.toString(16)).slice(-2))).join('');
     }
+    testBlock(text) {
+       return /@@(.*)@@/.test(text);
+    }
+    async cloakBlock(phrase,text) {
+        let key = await this.makeKey(phrase)
+        return text.replace(/@@(.*)@@/mg,(block,content)=>{
+            return `<span class="xipper">@@${this.xipper.cloak(key,content)}@@</span>`
+        })
+    }
+    async decloakBlock(phrase,text) {
+        let key = await this.makeKey(phrase)
+        return text.replace(/@@(.*)@@/mg,(block,content)=>{
+            return `<span class="xipper">@@${this.xipper.decloak(key,content)}@@</span>`
+        })
+    }
+    get store() {
+        return {
+            get:(name)=>localStorage.getItem.bind("xipper.store."+name),
+            put:(name)=>localStorage.putItem.bind("xipper.store."+name,value)
+        }
+    }
 }

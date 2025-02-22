@@ -25,4 +25,7 @@ export default class XipperMonitor {
         link.setAttribute("href", '/lib/xipper/monitor/style.css');
         document.getElementsByTagName("head")[0].appendChild(link);
     }
+    flash() {
+        
+    }
 };
