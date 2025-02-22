@@ -1,11 +1,28 @@
 .xipper-monitor {
     position:absolute;
+    display:flex;
+    flex-direction:row;
     top:0;
     right:0;
     cursor:pointer;
     color:#7f655b;
     padding-top:2px;
     padding-right:16px;
-    letter-spacing: -4px;
+}
+.xipper-monitor .xipper-icon {
+    flex:0;
+    letter-spacing: -14px;
+    font-size:20px;
+    margin:2px;
+    align-self: center;
     font-family:sans-serif;
+    user-select: none;
+}
+.xipper-monitor .control-panel {
+    flex:1;
+    min-width:150px;
+    animate: 0.2s;
+}
+.xipper-monitor .xipper-icon.flash {
+    color:green;
 }

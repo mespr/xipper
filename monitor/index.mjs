@@ -8,15 +8,21 @@ export default class XipperMonitor {
         this.xipper = new Xipper();
         this.element = element;
         this.addStyles()
-        this.renderTag = document.createElement("div");
-        this.renderTag.classList.add("xipper-monitor");
-        this.renderTag.innerText='@@';
-        this.renderTag.title = '[xipper] enter pass phrase'
-        this.renderTag.addEventListener('click',this.activate.bind(this));
-        this.element.parentElement.append(this.renderTag);
+        this.display = document.createElement('div');
+        this.display.classList.add('xipper-monitor');
+        this.display.innerHTML = `
+            <div class="control-panel">
+                <input id="phrase" type="text">
+            </div>
+            <div title="Xipper panel" class="xipper-icon">@@</div>`;
+        this.element.parentElement.appendChild(this.display);
+        this.controlPanel = this.display.querySelector('.control-panel');
+        this.xipperIcon = this.display.querySelector('.xipper-icon');
+        this.xipperIcon.addEventListener('click',this.activate.bind(this));
     }
     async activate(element) {
         console.log('clickety')
+        this.flash();
     }
     addStyles() {
         let link = document.createElement('link');
@@ -26,6 +32,9 @@ export default class XipperMonitor {
         document.getElementsByTagName("head")[0].appendChild(link);
     }
     flash() {
-        
+        this.xipperIcon.classList.add('flash');
+        setTimeout(() => {
+            this.xipperIcon.classList.remove('flash');
+        })
     }
 };
