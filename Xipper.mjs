@@ -208,28 +208,40 @@ export default class Xipper {
         return result;
     }
     async makeKey(str) {
+        if (!str) throw "no pass phrase provided"
         let buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder("utf-8").encode(str));
         return Array.prototype.map.call(new Uint8Array(buf), x=>(('00'+x.toString(16)).slice(-2))).join('');
     }
     testBlock(text) {
-       return /@@(.*)@@/.test(text);
+        return /@@((\n|\r|.)*?)@@/m.test(text);
     }
-    async cloakBlock(phrase,text) {
+    async cloakBlock(phrase,text,quote,endquote) {
         let key = await this.makeKey(phrase)
-        return text.replace(/@@(.*)@@/mg,(block,content)=>{
-            return `<span class="xipper">@@${this.xipper.cloak(key,content)}@@</span>`
+        quote = quote===''?'':quote||'@@';
+        endquote = endquote||quote;
+        return text.replace(/@@((\n|\r|.)*?)@@/gm,(block,content)=>{
+            return `${quote}${this.cloak(key,content)}${endquote}`;
         })
     }
-    async decloakBlock(phrase,text) {
+    async decloakBlock(phrase,text,quote,endquote) {
         let key = await this.makeKey(phrase)
-        return text.replace(/@@(.*)@@/mg,(block,content)=>{
-            return `<span class="xipper">@@${this.xipper.decloak(key,content)}@@</span>`
+        quote = quote===''?'':quote||'@@';
+        endquote = endquote||quote;
+        return text.replace(/@@((\n|\r|.)*?)@@/gm,(block,content)=>{
+            return `${quote}${this.decloak(key,content)}${endquote}`;
         })
     }
     get store() {
         return {
-            get:(name)=>localStorage.getItem.bind("xipper.store."+name),
-            put:(name)=>localStorage.putItem.bind("xipper.store."+name,value)
+            get:(name)=>{
+                return localStorage.getItem("xipper.store."+name);
+            },
+            put:(name,value)=>{
+                localStorage.setItem("xipper.store."+name,value)
+            },
+            remove:(name,value)=>{
+                localStorage.removeItem("xipper.store."+name,value)
+            }
         }
     }
 }

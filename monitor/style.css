@@ -1,28 +1,39 @@
 .xipper-monitor {
     position:absolute;
-    display:flex;
+    display:none;
     flex-direction:row;
     top:0;
     right:0;
     cursor:pointer;
-    color:#7f655b;
-    padding-top:2px;
-    padding-right:16px;
+    padding:var(--spacer) var(--spacer2);
+}
+.xipper-monitor.reveal {
+    display:flex;
 }
 .xipper-monitor .xipper-icon {
     flex:0;
-    letter-spacing: -14px;
-    font-size:20px;
-    margin:2px;
+    letter-spacing: -8px;
+    font-size:18px;
     align-self: center;
     font-family:sans-serif;
     user-select: none;
+    padding-right:var(--spacer);
+    transition:0.2s color
 }
 .xipper-monitor .control-panel {
+    display:none;
     flex:1;
     min-width:150px;
-    animate: 0.2s;
+    font-size:12px;
+}
+.xipper-monitor.expand .control-panel {
+    display: flex;
+}
+.xipper-monitor .control-panel input {
+    font-size:12px;
+    padding:2px;
+    border-color:var(--bg-color-d);
 }
 .xipper-monitor .xipper-icon.flash {
-    color:green;
+    color:#aa0000;
 }
