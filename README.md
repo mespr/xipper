@@ -61,6 +61,9 @@ Xipper does provide a simple tool for stashing phrases to be re-applied. This is
 used by XipperMonitor to make the system user friendly and to avoid security fatigue.
 It is not used by Xipper itself or required in any way.
 
+Xipper store transforms all strings to lowercase. Long phrases memorable to a person
+provide better security then whacky passwords with strange mixed case and punctuation.
+
 ## Xipper Monitor
 The monitor provides a widget for prompting for and applying the decryption
 phrase. It is designed to be attached to an editable DIV on the host page.

@@ -5281,11 +5281,12 @@ let XipperMonitor$1 = class XipperMonitor {
         this.display.classList.add('reveal');
     }
     get activePhrase() {
-        return this.phraseInput.value || this.xipper.store.get(this.name)
+        return (this.phraseInput.value || this.xipper.store.get(this.name))?.toLowerCase();
     }
     async render(content) {
         try {
             content = await this.xipper.decloakBlock(this.activePhrase,content,'');
+            this.activate(false);
         } catch(e) {
             this.flash();
             this.activate(true);
