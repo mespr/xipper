@@ -17,9 +17,14 @@ data.
 ```shell
 npm i xipper
 ```
+Xipper uses [rollup](rollupjs.org) to bundle files for browser use.
+```javscript
+<script src='xipper.bundle.js'>
+```
 
 ## Usage
 ```javascript
+import {Xipper} from '<path>/xipper.bundle.js'
 const xipper = new Xipper();
 let key = 'abcdabcdabcdabcdabcdabcdabcdabcd';
 let result = xipper.cloak(key,"This is a test");
@@ -47,3 +52,35 @@ let xipper = new Xipper({charset:"global",spacing:"false"});
 * *extended* - characters selected from the extended ascii set, 0x0154 to 0x0254
 * *global* - A selection of international characters including cyrillic and greek
 * *scrambls* - The original scrambls character set
+
+## Secret Store
+Xipper does not communicate with any server. All encryption takes place within the
+memory of the browser. The phrase used to encode content is only known to the user.
+
+Xipper does provide a simple tool for stashing phrases to be re-applied. This is
+used by XipperMonitor to make the system user friendly and to avoid security fatigue.
+It is not used by Xipper itself or required in any way.
+
+## Xipper Monitor
+The monitor provides an html widget for prompting for and applying the decryption
+phrase. It is designed to be attached to an editable DIV on the host page.
+
+```javascript
+import {XipperMonitor} from 'Xipper';
+
+const myDiv = document.createElement('div');
+this.xipperMonitor = new XipperMonitor(this.doclet._id.d,{hide:true});
+this.xipperMonitor.attach(myDiv);
+
+try {
+    // if matches the pattern @@...@@
+    if (this.xipper.testBlock(myDiv.innerText)) {
+        // descrypt the xipped blocks with the last used phrase in the xipper store
+        myDiv.innerText = await this.xipper.decloakBlock(this.xipperMonitor.activePhrase,myDiv.innerText);
+    }
+} catch(e) {
+    // the decrypt phrase failed, so alert the user and prompt for the correct phrase
+    this.xipperMonitor.flash();
+    this.xipperMonitor.activate(true);
+}
+```

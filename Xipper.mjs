@@ -207,4 +207,41 @@ export default class Xipper {
         }
         return result;
     }
+    async makeKey(str) {
+        if (!str) throw "no pass phrase provided"
+        let buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder("utf-8").encode(str));
+        return Array.prototype.map.call(new Uint8Array(buf), x=>(('00'+x.toString(16)).slice(-2))).join('');
+    }
+    testBlock(text) {
+        return /@@((\n|\r|.)*?)@@/m.test(text);
+    }
+    async cloakBlock(phrase,text,quote,endquote) {
+        let key = await this.makeKey(phrase)
+        quote = quote===''?'':quote||'@@';
+        endquote = endquote||quote;
+        return text.replace(/@@((\n|\r|.)*?)@@/gm,(block,content)=>{
+            return `${quote}${this.cloak(key,content)}${endquote}`;
+        })
+    }
+    async decloakBlock(phrase,text,quote,endquote) {
+        let key = await this.makeKey(phrase)
+        quote = quote===''?'':quote||'@@';
+        endquote = endquote||quote;
+        return text.replace(/@@((\n|\r|.)*?)@@/gm,(block,content)=>{
+            return `${quote}${this.decloak(key,content)}${endquote}`;
+        })
+    }
+    get store() {
+        return {
+            get:(name)=>{
+                return localStorage.getItem("xipper.store."+name);
+            },
+            put:(name,value)=>{
+                localStorage.setItem("xipper.store."+name,value)
+            },
+            remove:(name,value)=>{
+                localStorage.removeItem("xipper.store."+name,value)
+            }
+        }
+    }
 }

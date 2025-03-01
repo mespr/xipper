@@ -1,5 +1,7 @@
 "use strict";
 
+import Xipper from "../Xipper.mjs";
+let xipper = new Xipper();
 function OnLoadBody()
 {
     ClearTextBoxes();
@@ -26,9 +28,9 @@ function OnOriginalChange()
 
     var text = document.getElementById("originalBox").value;    
            
-    // Perform computations    
-    var encryptedText = Xloaker.aesCloaker.cloak(key, text).ciphered;    
-    var decryptedText = Xloaker.aesCloaker.decloak(key, encryptedText).clear;
+    // Perform computations
+    var encryptedText = xipper.cloak(key, text).ciphered;
+    var decryptedText = xipper.decloak(key, encryptedText).clear;
     
     // Display results      
     document.getElementById("scrambledBox").value = encryptedText;        

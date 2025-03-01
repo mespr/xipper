@@ -1,8 +1,8 @@
 {
   "name": "xipper",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Streaming text cypher",
-  "main": "Xipper.mjs",
+  "main": "index.mjs",
   "directories": {
     "test": "test"
   },
@@ -15,5 +15,8 @@
   },
   "homepage": "https://github.com/mespr/xipper#readme",
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "rollup": "^4.34.8"
+  }
 }
