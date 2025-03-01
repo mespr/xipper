@@ -23,8 +23,8 @@ export default class XipperMonitor {
         this.xipperIcon.addEventListener('click',this.activate.bind(this));
         this.phraseInput = this.display.querySelector('input');
         this.phraseInput.value = this.xipper.store.get(this.name);
-        this.phraseInput.addEventListener('keyDown',this.typing.bind(this));
-        this.phraseInput.addEventListener('blur',this.updatePhrase.bind(this));
+        this.phraseInput.addEventListener('keypress',this.typing.bind(this));
+        this.phraseInput.addEventListener('blur',this.applyPhrase.bind(this));
         // this.display.querySelector('#applyPhrase').addEventListener('click',this.applyPhrase.bind(this));
     }
     attach(element) {
@@ -37,16 +37,12 @@ export default class XipperMonitor {
         else this.display.classList.toggle('expand');
     }
     async typing(event) {
-        console.log("key: "+event.code);
         if (event.code === "Enter") await this.applyPhrase();
     }
-    async updatePhrase(event) {
-        if (this.phraseInput.value == "") this.xipper.store.remove(this.name);
-        else this.xipper.store.put(this.name,this.phraseInput.value);
-    }
     async applyPhrase() {
+        if (this.phraseInput.value === "") this.xipper.store.remove(this.name);
         this.xipper.store.put(this.name,this.phraseInput.value);
-        await this.render();
+        if (this.options.onupdate) this.options.onupdate()
     }
     addStyles() {
         let style = document.createElement('style');

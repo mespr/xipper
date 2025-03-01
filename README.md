@@ -62,7 +62,7 @@ used by XipperMonitor to make the system user friendly and to avoid security fat
 It is not used by Xipper itself or required in any way.
 
 ## Xipper Monitor
-The monitor provides an html widget for prompting for and applying the decryption
+The monitor provides a widget for prompting for and applying the decryption
 phrase. It is designed to be attached to an editable DIV on the host page.
 
 ```javascript
@@ -83,4 +83,10 @@ try {
     this.xipperMonitor.flash();
     this.xipperMonitor.activate(true);
 }
+```
+
+## Development
+Build xipper.bundle.js by invoking rollup with the configuration defined in rollup.config.mjs
+```bash
+$ rollup -c
 ```
