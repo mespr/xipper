@@ -2,7 +2,7 @@
  * XipperMonitor can be added to a text input field. It applies xipper
  * encoding and pass phrase handling
  */
-import Xipper from '/lib/xipper/Xipper.mjs';
+import Xipper from './Xipper.mjs';
 export default class XipperMonitor {
     constructor(name,options={}) {
         this.name = name;
@@ -49,11 +49,9 @@ export default class XipperMonitor {
         await this.render();
     }
     addStyles() {
-        let link = document.createElement('link');
-        link.setAttribute("rel", "stylesheet");
-        link.setAttribute("type", "text/css");
-        link.setAttribute("href", '/lib/xipper/monitor/style.css');
-        document.getElementsByTagName("head")[0].appendChild(link);
+        let style = document.createElement('style');
+        style.innerText = styles;
+        document.getElementsByTagName("head")[0].appendChild(style);
     }
     flash() {
         this.reveal();
@@ -82,3 +80,44 @@ export default class XipperMonitor {
         return content;
     }
 };
+
+const styles = `
+.xipper-monitor {
+    position:absolute;
+    display:none;
+    flex-direction:row;
+    top:0;
+    right:0;
+    cursor:pointer;
+    padding:var(--spacer) var(--spacer2);
+}
+.xipper-monitor.reveal {
+    display:flex;
+}
+.xipper-monitor .xipper-icon {
+    flex:0;
+    letter-spacing: -8px;
+    font-size:18px;
+    align-self: center;
+    font-family:sans-serif;
+    user-select: none;
+    padding-right:var(--spacer);
+    transition:0.2s color
+}
+.xipper-monitor .control-panel {
+    display:none;
+    flex:1;
+    min-width:150px;
+    font-size:12px;
+}
+.xipper-monitor.expand .control-panel {
+    display: flex;
+}
+.xipper-monitor .control-panel input {
+    font-size:12px;
+    padding:2px;
+    border-color:var(--bg-color-d);
+}
+.xipper-monitor .xipper-icon.flash {
+    color:#aa0000;
+}`;
