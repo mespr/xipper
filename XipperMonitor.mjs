@@ -93,13 +93,14 @@ const styles = `
 }
 .xipper-monitor .xipper-icon {
     flex:0;
-    letter-spacing: -8px;
+    letter-spacing: -10px;
     font-size:18px;
     align-self: center;
     font-family:sans-serif;
     user-select: none;
     padding-right:var(--spacer);
-    transition:0.2s color
+    transition:0.2s color;
+    font-size: 1.3em;
 }
 .xipper-monitor .control-panel {
     display:none;
