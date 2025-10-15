@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "test/test.xjs"
+    "test": "test/test.mjs"
   },
   "repository": {
     "type": "git",
